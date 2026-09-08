@@ -1,9 +1,12 @@
+"""FastAPI app entrypoint."""
+
 from fastapi import FastAPI
-from autonomous_research_agent.api import health
+from autonomous_research_agent.api import health, research
 
 app = FastAPI(title="Autonomous Research Agent")
 
 app.include_router(health.router)
+app.include_router(research.router)
 
 
 def main():

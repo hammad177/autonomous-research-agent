@@ -4,7 +4,7 @@ from qdrant_client import QdrantClient
 
 from autonomous_research_agent.config import settings
 
-router = APIRouter(prefix="/api/health", tags=["health"])
+router = APIRouter(prefix="/api/health", tags=["Health"])
 
 
 @router.get("/")
