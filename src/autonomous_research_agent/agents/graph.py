@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
 
 from autonomous_research_agent.agents.state import AgentState
-from autonomous_research_agent.agents.nodes.planner_node import planner_node_placeholder
+from autonomous_research_agent.agents.nodes.planner_node import make_planner_node
 from autonomous_research_agent.agents.nodes.researcher_node import (
     researcher_node_placeholder,
 )
@@ -13,7 +13,7 @@ from autonomous_research_agent.agents.checkpointer import get_checkpointer
 def build_research_graph():
     graph = StateGraph(AgentState)
 
-    graph.add_node("planner", planner_node_placeholder)
+    graph.add_node("planner", make_planner_node())
     graph.add_node("researcher", researcher_node_placeholder)
     graph.add_node("critic", critic_node_placeholder)
     graph.add_node("writer", writer_node_placeholder)
