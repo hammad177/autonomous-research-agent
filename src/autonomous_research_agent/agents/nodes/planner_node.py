@@ -6,7 +6,17 @@ def make_planner_node():
     agent = build_planner_agent()
 
     async def planner_node(state: AgentState) -> AgentState:
-        result = await agent.run(state["goal"])
+        goal = state["goal"]
+        feedback = state.get("planner_feedback")
+
+        prompt = goal
+        if feedback:
+            prompt = (
+                f"{goal}\n\nA previous plan was rejected with this feedback: "
+                f"{feedback}\nProduce an improved plan that addresses it."
+            )
+
+        result = await agent.run(prompt)
         plan = result.output
 
         sub_questions = [
