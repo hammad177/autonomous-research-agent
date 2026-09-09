@@ -11,3 +11,6 @@ wheels/
 
 # env files
 .env
+
+# vector store related pdf files and metadata
+data/*

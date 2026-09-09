@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_COLLECTION_NAME: str = "research_knowledge_base"
 
-    # --- Redis ---
-    REDIS_URI: str = "redis://localhost:6379"
+    # --- Storage ---
+    UPLOAD_DIR: str = "data/uploads"
+    DOCUMENT_METADATA_PATH: str = "data/documents.json"
 
 
 settings = Settings()
