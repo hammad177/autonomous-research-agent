@@ -22,10 +22,17 @@ class PlanDecisionRequest(BaseModel):
     )
 
 
+class Finding(BaseModel):
+    sub_question: str
+    content: str
+    source: str
+
+
 class ResearchStatusResponse(BaseModel):
     thread_id: str
     goal: str
     status: Literal["awaiting_plan_approval", "in_progress", "completed"]
     pending_plan: dict | None = None
+    findings: list[Finding] = []
     draft: str | None = None
     trace: list[str] = []

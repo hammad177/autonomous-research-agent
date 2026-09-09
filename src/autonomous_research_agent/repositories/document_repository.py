@@ -10,10 +10,19 @@ class DocumentRepository:
         self._data: dict[str, dict] = self._load()
 
     def _load(self) -> dict:
-        if self.storage_path.exists():
+        if not self.storage_path.exists():
+            return {}
+
+        # Check if empty
+        if self.storage_path.stat().st_size == 0:
+            return {}
+
+        try:
             with open(self.storage_path, "r") as f:
                 return json.load(f)
-        return {}
+        except json.JSONDecodeError:
+            # Log error and return empty
+            return {}
 
     def _save(self) -> None:
         with open(self.storage_path, "w") as f:

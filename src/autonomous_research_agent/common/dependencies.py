@@ -13,18 +13,18 @@ from autonomous_research_agent.config import settings
 
 
 @lru_cache
+def get_vector_repository() -> VectorRepository:
+    return VectorRepository()
+
+
+@lru_cache
 def get_research_graph():
-    return build_research_graph()
+    return build_research_graph(vector_repo=get_vector_repository())
 
 
 @lru_cache
 def get_research_service() -> ResearchService:
     return ResearchService(graph=get_research_graph())
-
-
-@lru_cache
-def get_vector_repository() -> VectorRepository:
-    return VectorRepository()
 
 
 @lru_cache
