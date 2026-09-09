@@ -20,6 +20,9 @@ class AgentState(TypedDict, total=False):
     sub_questions: list[SubQuestion]
     plan_status: str  # "approved" | "rejected" — set by the human approval node
     planner_feedback: str  # carried back to the planner if the plan is rejected
+    current_sub_question: (
+        SubQuestion  # only set within a single parallel research branch
+    )
     findings: Annotated[list[Finding], operator.add]
     draft: str
     revision_count: int

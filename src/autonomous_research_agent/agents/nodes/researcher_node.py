@@ -13,26 +13,20 @@ def make_researcher_node(vector_repo: VectorRepository):
     agent = build_researcher_agent(vector_repo)
 
     async def researcher_node(state: AgentState) -> AgentState:
-        findings = []
-        trace = []
+        sq = state["current_sub_question"]
+        question = sq["question"]
 
-        for sq in state["sub_questions"]:
-            question = sq["question"]
-            result = await agent.ainvoke({"messages": [HumanMessage(content=question)]})
-            messages = result["messages"]
-            final_answer = messages[-1].content
-            tools_used = _extract_tools_used(messages)
-            source = ", ".join(tools_used) if tools_used else "general_knowledge"
+        result = await agent.ainvoke({"messages": [HumanMessage(content=question)]})
+        messages = result["messages"]
+        final_answer = messages[-1].content
+        tools_used = _extract_tools_used(messages)
+        source = ", ".join(tools_used) if tools_used else "general_knowledge"
 
-            findings.append(
-                {
-                    "sub_question": question,
-                    "content": final_answer,
-                    "source": source,
-                }
-            )
-            trace.append(f"researcher: answered '{question}' using [{source}]")
+        finding = {"sub_question": question, "content": final_answer, "source": source}
 
-        return {"findings": findings, "trace": trace}
+        return {
+            "findings": [finding],
+            "trace": [f"researcher: answered '{question}' using [{source}]"],
+        }
 
     return researcher_node
