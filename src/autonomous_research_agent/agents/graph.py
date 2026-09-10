@@ -7,9 +7,13 @@ from autonomous_research_agent.agents.nodes.plan_approval_node import plan_appro
 from autonomous_research_agent.agents.nodes.researcher_node import make_researcher_node
 from autonomous_research_agent.agents.nodes.critic_node import make_critic_node
 from autonomous_research_agent.agents.nodes.writer_node import writer_node_placeholder
+from autonomous_research_agent.agents.nodes.memory_writer_node import (
+    make_memory_writer_node,
+)
 from autonomous_research_agent.agents.checkpointer import get_checkpointer
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
 from autonomous_research_agent.services.graph_service import GraphService
+from autonomous_research_agent.services.memory_service import MemoryService
 
 
 def route_after_plan_approval(state: AgentState):
@@ -52,7 +56,11 @@ def route_after_critic(state: AgentState):
     return sends if sends else "writer"
 
 
-def build_research_graph(vector_repo: VectorRepository, graph_service: GraphService):
+def build_research_graph(
+    vector_repo: VectorRepository,
+    graph_service: GraphService,
+    memory_service: MemoryService,
+):
     graph = StateGraph(AgentState)
 
     graph.add_node("planner", make_planner_node())
@@ -60,6 +68,7 @@ def build_research_graph(vector_repo: VectorRepository, graph_service: GraphServ
     graph.add_node("researcher", make_researcher_node(vector_repo, graph_service))
     graph.add_node("critic", make_critic_node())
     graph.add_node("writer", writer_node_placeholder)
+    graph.add_node("memory_writer", make_memory_writer_node(memory_service))
 
     graph.set_entry_point("planner")
     graph.add_edge("planner", "plan_approval")
@@ -68,6 +77,7 @@ def build_research_graph(vector_repo: VectorRepository, graph_service: GraphServ
     )
     graph.add_edge("researcher", "critic")
     graph.add_conditional_edges("critic", route_after_critic, ["researcher", "writer"])
-    graph.add_edge("writer", END)
+    graph.add_edge("writer", "memory_writer")
+    graph.add_edge("memory_writer", END)
 
     return graph.compile(checkpointer=get_checkpointer())

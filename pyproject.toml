@@ -26,6 +26,7 @@ dependencies = [
     "duckduckgo-search>=8.1.1",
     "langchain-community>=0.4.2",
     "ddgs>=9.16.0",
+    "mem0ai>=2.0.20",
 ]
 
 [project.scripts]

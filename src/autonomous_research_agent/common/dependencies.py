@@ -11,6 +11,7 @@ from autonomous_research_agent.core.chunking import TextChunker
 from autonomous_research_agent.repositories.graph_repository import GraphRepository
 from autonomous_research_agent.services.ingestion_service import IngestionService
 from autonomous_research_agent.services.graph_service import GraphService
+from autonomous_research_agent.services.memory_service import MemoryService
 from autonomous_research_agent.config import settings
 
 
@@ -30,10 +31,16 @@ def get_graph_service() -> GraphService:
 
 
 @lru_cache
+def get_memory_service() -> MemoryService:
+    return MemoryService()
+
+
+@lru_cache
 def get_research_graph():
     return build_research_graph(
         vector_repo=get_vector_repository(),
         graph_service=get_graph_service(),
+        memory_service=get_memory_service(),
     )
 
 

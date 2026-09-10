@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from autonomous_research_agent.api import health, research, documents, graph
+from autonomous_research_agent.api import health, research, documents, graph, memory
 
 app = FastAPI(title="Autonomous Research Agent")
 
@@ -7,6 +7,7 @@ app.include_router(health.router)
 app.include_router(research.router)
 app.include_router(documents.router)
 app.include_router(graph.router)
+app.include_router(memory.router)
 
 
 def main():

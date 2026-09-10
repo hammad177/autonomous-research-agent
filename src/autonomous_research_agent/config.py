@@ -23,5 +23,8 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "data/uploads"
     DOCUMENT_METADATA_PATH: str = "data/documents.json"
 
+    # --- Memory ---
+    MEMORY_NAMESPACE: str = "research_agent"
+
 
 settings = Settings()
