@@ -5,7 +5,7 @@ from autonomous_research_agent.agents.state import AgentState
 from autonomous_research_agent.agents.nodes.planner_node import make_planner_node
 from autonomous_research_agent.agents.nodes.plan_approval_node import plan_approval_node
 from autonomous_research_agent.agents.nodes.researcher_node import make_researcher_node
-from autonomous_research_agent.agents.nodes.critic_node import critic_node_placeholder
+from autonomous_research_agent.agents.nodes.critic_node import make_critic_node
 from autonomous_research_agent.agents.nodes.writer_node import writer_node_placeholder
 from autonomous_research_agent.agents.checkpointer import get_checkpointer
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
@@ -25,13 +25,39 @@ def route_after_plan_approval(state: AgentState):
     ]
 
 
+def route_after_critic(state: AgentState):
+    if state.get("critic_verdict") != "needs_more_research":
+        return "writer"
+
+    weak = state.get("weak_sub_questions", [])
+    feedback = state.get("critic_feedback", "")
+    sub_questions_by_text = {sq["question"]: sq for sq in state["sub_questions"]}
+
+    sends = [
+        Send(
+            "researcher",
+            {
+                "current_sub_question": sub_questions_by_text[q],
+                "critic_feedback": feedback,
+            },
+        )
+        for q in weak
+        if q in sub_questions_by_text
+    ]
+
+    # Safety net: if the critic named sub-questions that don't exactly
+    # match the original text, fall back to writer rather than dropping
+    # the run into a dead end with zero Sends dispatched.
+    return sends if sends else "writer"
+
+
 def build_research_graph(vector_repo: VectorRepository):
     graph = StateGraph(AgentState)
 
     graph.add_node("planner", make_planner_node())
     graph.add_node("plan_approval", plan_approval_node)
     graph.add_node("researcher", make_researcher_node(vector_repo))
-    graph.add_node("critic", critic_node_placeholder)
+    graph.add_node("critic", make_critic_node())
     graph.add_node("writer", writer_node_placeholder)
 
     graph.set_entry_point("planner")
@@ -42,7 +68,11 @@ def build_research_graph(vector_repo: VectorRepository):
         ["planner", "researcher"],
     )
     graph.add_edge("researcher", "critic")
-    graph.add_edge("critic", "writer")
+    graph.add_conditional_edges(
+        "critic",
+        route_after_critic,
+        ["researcher", "writer"],
+    )
     graph.add_edge("writer", END)
 
     return graph.compile(checkpointer=get_checkpointer())

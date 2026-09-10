@@ -29,6 +29,9 @@ class ResearchService:
         return {
             "goal": values.get("goal", ""),
             "pending_plan": pending_plan,
+            "findings": values.get("findings", []),
+            "critic_verdict": values.get("critic_verdict"),
+            "revision_count": values.get("revision_count", 0),
             "draft": values.get("draft"),
             "trace": values.get("trace", []),
             "is_paused": bool(snapshot.next),

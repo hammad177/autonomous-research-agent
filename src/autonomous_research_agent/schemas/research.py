@@ -34,5 +34,7 @@ class ResearchStatusResponse(BaseModel):
     status: Literal["awaiting_plan_approval", "in_progress", "completed"]
     pending_plan: dict | None = None
     findings: list[Finding] = []
+    critic_verdict: str | None = None
+    revision_count: int = 0
     draft: str | None = None
     trace: list[str] = []

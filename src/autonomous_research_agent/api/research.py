@@ -24,6 +24,8 @@ def _build_status_response(thread_id: str, result: dict) -> ResearchStatusRespon
         status=status,
         pending_plan=pending,
         findings=result.get("findings", []),
+        critic_verdict=result.get("critic_verdict"),
+        revision_count=result.get("revision_count", 0),
         draft=result.get("draft"),
         trace=result.get("trace", []),
     )

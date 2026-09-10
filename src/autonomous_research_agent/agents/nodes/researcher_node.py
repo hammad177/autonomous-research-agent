@@ -15,8 +15,17 @@ def make_researcher_node(vector_repo: VectorRepository):
     async def researcher_node(state: AgentState) -> AgentState:
         sq = state["current_sub_question"]
         question = sq["question"]
+        feedback = state.get("critic_feedback")
 
-        result = await agent.ainvoke({"messages": [HumanMessage(content=question)]})
+        prompt = question
+        if feedback:
+            prompt = (
+                f"{question}\n\nA prior answer to this was reviewed and found "
+                f"lacking: {feedback}\nProvide more thorough, better-sourced "
+                f"research this time around."
+            )
+
+        result = await agent.ainvoke({"messages": [HumanMessage(content=prompt)]})
         messages = result["messages"]
         final_answer = messages[-1].content
         tools_used = _extract_tools_used(messages)
