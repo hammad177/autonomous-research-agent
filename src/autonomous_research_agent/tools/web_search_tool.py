@@ -3,9 +3,15 @@ from langchain_core.tools import tool
 
 
 def build_web_search_tool():
+    """Builds and returns a configured web search tool."""
 
     @tool
     def web_search(query: str) -> str:
+        """
+        Search the live web for current, general, or external information
+        not likely to be covered in the user's own knowledge base.
+        Input should be a search query.
+        """
         try:
             with DDGS() as ddgs:
                 results = ddgs.text(query, max_results=5)

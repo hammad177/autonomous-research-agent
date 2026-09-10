@@ -63,7 +63,7 @@ def build_research_graph(
 ):
     graph = StateGraph(AgentState)
 
-    graph.add_node("planner", make_planner_node())
+    graph.add_node("planner", make_planner_node(memory_service))
     graph.add_node("plan_approval", plan_approval_node)
     graph.add_node("researcher", make_researcher_node(vector_repo, graph_service))
     graph.add_node("critic", make_critic_node())
