@@ -3,31 +3,36 @@ from langchain.agents import create_agent
 
 from autonomous_research_agent.config import settings
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
+from autonomous_research_agent.services.graph_service import GraphService
 from autonomous_research_agent.tools.calculator_tool import calculator
 from autonomous_research_agent.tools.web_search_tool import build_web_search_tool
 from autonomous_research_agent.tools.knowledge_base_tool import (
     build_knowledge_base_tool,
 )
+from autonomous_research_agent.tools.graph_tool import build_graph_lookup_tool
 
 RESEARCHER_SYSTEM_PROMPT = (
     "You are a research agent answering one specific sub-question. Choose "
     "whichever tool(s) fit the question: use the knowledge base for anything "
-    "possibly covered by the user's own uploaded documents, web search for "
-    "current or general external information, and the calculator only for "
-    "numeric computation. You may use more than one tool if needed. Give a "
-    "clear, well-sourced final answer."
+    "possibly covered by the user's own uploaded documents, the graph lookup "
+    "tool for questions about how entities relate to each other, web search "
+    "for current or general external information, and the calculator only "
+    "for numeric computation. You may use more than one tool if needed. Give "
+    "a clear, well-sourced final answer."
 )
 
 
-def build_researcher_agent(vector_repo: VectorRepository):
+def build_researcher_agent(vector_repo: VectorRepository, graph_service: GraphService):
     llm_model = ChatOpenAI(
         model=settings.CHAT_MODEL, api_key=settings.OPENAI_API_KEY, temperature=0.2
     )
     tools = [
         build_knowledge_base_tool(vector_repo),
+        build_graph_lookup_tool(graph_service),
         build_web_search_tool(),
         calculator,
     ]
+
     return create_agent(
         model=llm_model, tools=tools, system_prompt=RESEARCHER_SYSTEM_PROMPT
     )

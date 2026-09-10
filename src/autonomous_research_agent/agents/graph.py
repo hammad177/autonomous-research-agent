@@ -9,6 +9,7 @@ from autonomous_research_agent.agents.nodes.critic_node import make_critic_node
 from autonomous_research_agent.agents.nodes.writer_node import writer_node_placeholder
 from autonomous_research_agent.agents.checkpointer import get_checkpointer
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
+from autonomous_research_agent.services.graph_service import GraphService
 
 
 def route_after_plan_approval(state: AgentState):
@@ -51,28 +52,22 @@ def route_after_critic(state: AgentState):
     return sends if sends else "writer"
 
 
-def build_research_graph(vector_repo: VectorRepository):
+def build_research_graph(vector_repo: VectorRepository, graph_service: GraphService):
     graph = StateGraph(AgentState)
 
     graph.add_node("planner", make_planner_node())
     graph.add_node("plan_approval", plan_approval_node)
-    graph.add_node("researcher", make_researcher_node(vector_repo))
+    graph.add_node("researcher", make_researcher_node(vector_repo, graph_service))
     graph.add_node("critic", make_critic_node())
     graph.add_node("writer", writer_node_placeholder)
 
     graph.set_entry_point("planner")
     graph.add_edge("planner", "plan_approval")
     graph.add_conditional_edges(
-        "plan_approval",
-        route_after_plan_approval,
-        ["planner", "researcher"],
+        "plan_approval", route_after_plan_approval, ["planner", "researcher"]
     )
     graph.add_edge("researcher", "critic")
-    graph.add_conditional_edges(
-        "critic",
-        route_after_critic,
-        ["researcher", "writer"],
-    )
+    graph.add_conditional_edges("critic", route_after_critic, ["researcher", "writer"])
     graph.add_edge("writer", END)
 
     return graph.compile(checkpointer=get_checkpointer())

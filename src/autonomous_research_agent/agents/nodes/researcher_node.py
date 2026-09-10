@@ -3,14 +3,15 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from autonomous_research_agent.agents.state import AgentState
 from autonomous_research_agent.llm.researcher_agent import build_researcher_agent
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
+from autonomous_research_agent.services.graph_service import GraphService
 
 
 def _extract_tools_used(messages: list) -> list[str]:
     return sorted({m.name for m in messages if isinstance(m, ToolMessage) and m.name})
 
 
-def make_researcher_node(vector_repo: VectorRepository):
-    agent = build_researcher_agent(vector_repo)
+def make_researcher_node(vector_repo: VectorRepository, graph_service: GraphService):
+    agent = build_researcher_agent(vector_repo, graph_service)
 
     async def researcher_node(state: AgentState) -> AgentState:
         sq = state["current_sub_question"]

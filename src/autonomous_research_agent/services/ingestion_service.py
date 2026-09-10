@@ -8,6 +8,7 @@ from autonomous_research_agent.repositories.vector_repository import VectorRepos
 from autonomous_research_agent.repositories.document_repository import (
     DocumentRepository,
 )
+from autonomous_research_agent.services.graph_service import GraphService
 from autonomous_research_agent.schemas.document import DocumentMetadata, IngestResponse
 
 
@@ -19,12 +20,14 @@ class IngestionService:
         pdf_extractor: PDFExtractor,
         url_extractor: URLExtractor,
         text_chunker: TextChunker,
+        graph_service: GraphService,
     ):
         self.vector_repo = vector_repo
         self.document_repo = document_repo
         self.pdf_extractor = pdf_extractor
         self.url_extractor = url_extractor
         self.chunker = text_chunker
+        self.graph_service = graph_service
 
     @staticmethod
     def _hash_text(text: str) -> str:
@@ -49,10 +52,15 @@ class IngestionService:
         if stale and stale.content_hash != content_hash:
             self.vector_repo.delete_by_document_id(stale.id)
             self.document_repo.delete(stale.id)
+            self.graph_service.graph_repo.delete_by_source(source)
 
         chunks = self.chunker.chunk(text)
         document_id = str(uuid.uuid4())
         self.vector_repo.add_chunks(chunks, source=source, document_id=document_id)
+
+        # Extract on the full text, not per chunk, so relationships spanning
+        # multiple sentences/paragraphs aren't lost to chunk boundaries.
+        self.graph_service.extract_and_store(text, source=source)
 
         metadata = DocumentMetadata(
             id=document_id,

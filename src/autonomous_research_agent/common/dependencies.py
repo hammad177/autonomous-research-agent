@@ -8,7 +8,9 @@ from autonomous_research_agent.repositories.document_repository import (
     DocumentRepository,
 )
 from autonomous_research_agent.core.chunking import TextChunker
+from autonomous_research_agent.repositories.graph_repository import GraphRepository
 from autonomous_research_agent.services.ingestion_service import IngestionService
+from autonomous_research_agent.services.graph_service import GraphService
 from autonomous_research_agent.config import settings
 
 
@@ -18,8 +20,21 @@ def get_vector_repository() -> VectorRepository:
 
 
 @lru_cache
+def get_graph_repository() -> GraphRepository:
+    return GraphRepository()
+
+
+@lru_cache
+def get_graph_service() -> GraphService:
+    return GraphService(graph_repo=get_graph_repository())
+
+
+@lru_cache
 def get_research_graph():
-    return build_research_graph(vector_repo=get_vector_repository())
+    return build_research_graph(
+        vector_repo=get_vector_repository(),
+        graph_service=get_graph_service(),
+    )
 
 
 @lru_cache
@@ -40,4 +55,5 @@ def get_ingestion_service() -> IngestionService:
         pdf_extractor=PDFExtractor(),
         url_extractor=URLExtractor(),
         text_chunker=TextChunker(),
+        graph_service=get_graph_service(),
     )
