@@ -15,16 +15,7 @@ class Finding(TypedDict):
 
 def merge_findings(existing: list[Finding], new: list[Finding]) -> list[Finding]:
     """Merges new findings in, REPLACING any existing finding for the same
-    sub-question rather than appending a duplicate alongside it.
-
-    This matters starting in Phase 7: when the critic sends a sub-question
-    back for more research, the researcher re-runs and produces a new
-    finding for that same sub-question. Plain operator.add (used through
-    Phase 6) would keep BOTH the old, rejected finding and the new one
-    side by side in the list — silently corrupting the final report with
-    a stale, already-rejected finding. This reducer makes re-research
-    correctly supersede the old result instead.
-    """
+    sub-question rather than appending a duplicate alongside it."""
     merged = {f["sub_question"]: f for f in existing}
     for f in new:
         merged[f["sub_question"]] = f
@@ -45,4 +36,8 @@ class AgentState(TypedDict, total=False):
     weak_sub_questions: list[str]
     draft: str
     revision_count: int
+    draft: str  # the rendered Markdown version of the report
+    report: (
+        dict  # the structured Report, as a dict (JSON-serializable for checkpointing)
+    )
     trace: Annotated[list[str], operator.add]

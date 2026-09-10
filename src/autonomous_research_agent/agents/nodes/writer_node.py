@@ -1,8 +1,29 @@
 from autonomous_research_agent.agents.state import AgentState
+from autonomous_research_agent.llm.writer_agent import build_writer_agent
+from autonomous_research_agent.schemas.report import Report
+from autonomous_research_agent.core.report_rendering import render_report_markdown
 
 
-async def writer_node_placeholder(state: AgentState) -> AgentState:
-    return {
-        "trace": ["writer: produced draft (placeholder)"],
-        "draft": f"[placeholder draft for goal: {state['goal']}]",
-    }
+def make_writer_node():
+    agent = build_writer_agent()
+
+    async def writer_node(state: AgentState) -> AgentState:
+        findings_text = "\n\n".join(
+            f"Sub-question: {f['sub_question']}\nFindings: {f['content']}\nSource: {f['source']}"
+            for f in state["findings"]
+        )
+        prompt = (
+            f"Research goal: {state['goal']}\n\nApproved findings:\n{findings_text}"
+        )
+
+        result = await agent.run(prompt)
+        report: Report = result.output
+        markdown = render_report_markdown(report)
+
+        return {
+            "report": report.model_dump(),
+            "draft": markdown,
+            "trace": [f"writer: produced report with {len(report.sections)} sections"],
+        }
+
+    return writer_node

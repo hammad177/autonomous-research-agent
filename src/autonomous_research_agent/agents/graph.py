@@ -6,7 +6,7 @@ from autonomous_research_agent.agents.nodes.planner_node import make_planner_nod
 from autonomous_research_agent.agents.nodes.plan_approval_node import plan_approval_node
 from autonomous_research_agent.agents.nodes.researcher_node import make_researcher_node
 from autonomous_research_agent.agents.nodes.critic_node import make_critic_node
-from autonomous_research_agent.agents.nodes.writer_node import writer_node_placeholder
+from autonomous_research_agent.agents.nodes.writer_node import make_writer_node
 from autonomous_research_agent.agents.nodes.memory_writer_node import (
     make_memory_writer_node,
 )
@@ -67,7 +67,7 @@ def build_research_graph(
     graph.add_node("plan_approval", plan_approval_node)
     graph.add_node("researcher", make_researcher_node(vector_repo, graph_service))
     graph.add_node("critic", make_critic_node())
-    graph.add_node("writer", writer_node_placeholder)
+    graph.add_node("writer", make_writer_node())
     graph.add_node("memory_writer", make_memory_writer_node(memory_service))
 
     graph.set_entry_point("planner")

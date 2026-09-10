@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import PlainTextResponse
 
 from autonomous_research_agent.schemas.research import (
     ResearchStartRequest,
@@ -57,9 +58,26 @@ async def get_research_status(
         goal=status_info["goal"],
         status=status,
         pending_plan=status_info["pending_plan"],
+        findings=status_info.get("findings", []),
+        critic_verdict=status_info.get("critic_verdict"),
+        revision_count=status_info.get("revision_count", 0),
         draft=status_info["draft"],
         trace=status_info["trace"],
     )
+
+
+@router.get("/{thread_id}/report", response_class=PlainTextResponse)
+async def get_report_markdown(
+    thread_id: str,
+    service: ResearchService = Depends(get_research_service),
+):
+    status_info = await service.get_status(thread_id)
+    draft = status_info.get("draft")
+    if not draft:
+        raise HTTPException(
+            status_code=404, detail="Report not yet available for this run."
+        )
+    return draft
 
 
 @router.post("/{thread_id}/plan", response_model=ResearchStatusResponse)
