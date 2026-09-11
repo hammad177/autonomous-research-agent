@@ -40,4 +40,6 @@ class AgentState(TypedDict, total=False):
     report: (
         dict  # the structured Report, as a dict (JSON-serializable for checkpointing)
     )
+    draft_status: str  # "approved" | "revise" — set by the human draft-approval node
+    draft_feedback: str  # carried back to the writer if revision is requested
     trace: Annotated[list[str], operator.add]

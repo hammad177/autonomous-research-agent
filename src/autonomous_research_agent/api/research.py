@@ -4,6 +4,7 @@ from fastapi.responses import PlainTextResponse
 from autonomous_research_agent.schemas.research import (
     ResearchStartRequest,
     PlanDecisionRequest,
+    DraftDecisionRequest,
     ResearchStatusResponse,
 )
 from autonomous_research_agent.services.research_service import ResearchService
@@ -18,12 +19,24 @@ router = APIRouter(prefix="/api/research", tags=["Research"])
 
 def _build_status_response(thread_id: str, result: dict) -> ResearchStatusResponse:
     pending = extract_pending_interrupt(result)
-    status = "awaiting_plan_approval" if pending else "completed"
+    pending_plan = None
+    pending_draft = None
+    status = "completed"
+
+    if pending:
+        if pending.get("type") == "plan_approval":
+            status = "awaiting_plan_approval"
+            pending_plan = pending.get("sub_questions")
+        elif pending.get("type") == "draft_approval":
+            status = "awaiting_draft_approval"
+            pending_draft = pending.get("draft")
+
     return ResearchStatusResponse(
         thread_id=thread_id,
         goal=result.get("goal", ""),
         status=status,
-        pending_plan=pending,
+        pending_plan=pending_plan,
+        pending_draft=pending_draft,
         findings=result.get("findings", []),
         critic_verdict=result.get("critic_verdict"),
         revision_count=result.get("revision_count", 0),
@@ -48,16 +61,25 @@ async def get_research_status(
     service: ResearchService = Depends(get_research_service),
 ):
     status_info = await service.get_status(thread_id)
-    status = (
-        "awaiting_plan_approval"
-        if status_info["pending_plan"]
-        else ("in_progress" if status_info["is_paused"] else "completed")
-    )
+    pending = status_info.get("pending_interrupt")
+
+    pending_plan = None
+    pending_draft = None
+    if pending and pending.get("type") == "plan_approval":
+        status = "awaiting_plan_approval"
+        pending_plan = pending.get("sub_questions")
+    elif pending and pending.get("type") == "draft_approval":
+        status = "awaiting_draft_approval"
+        pending_draft = pending.get("draft")
+    else:
+        status = "in_progress" if status_info["is_paused"] else "completed"
+
     return ResearchStatusResponse(
         thread_id=thread_id,
         goal=status_info["goal"],
         status=status,
-        pending_plan=status_info["pending_plan"],
+        pending_plan=pending_plan,
+        pending_draft=pending_draft,
         findings=status_info.get("findings", []),
         critic_verdict=status_info.get("critic_verdict"),
         revision_count=status_info.get("revision_count", 0),
@@ -87,10 +109,24 @@ async def decide_on_plan(
     service: ResearchService = Depends(get_research_service),
 ):
     try:
-        result = await service.resume_with_plan_decision(
+        result = await service.resume_with_decision(
             thread_id, body.model_dump(exclude_none=True)
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to resume run: {e}")
+    return _build_status_response(thread_id, result)
 
+
+@router.post("/{thread_id}/draft", response_model=ResearchStatusResponse)
+async def decide_on_draft(
+    thread_id: str,
+    body: DraftDecisionRequest,
+    service: ResearchService = Depends(get_research_service),
+):
+    try:
+        result = await service.resume_with_decision(
+            thread_id, body.model_dump(exclude_none=True)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to resume run: {e}")
     return _build_status_response(thread_id, result)

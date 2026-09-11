@@ -22,6 +22,13 @@ class PlanDecisionRequest(BaseModel):
     )
 
 
+class DraftDecisionRequest(BaseModel):
+    action: Literal["approve", "revise"]
+    feedback: str | None = Field(
+        default=None, description="Required when action is 'revise'."
+    )
+
+
 class Finding(BaseModel):
     sub_question: str
     content: str
@@ -31,8 +38,11 @@ class Finding(BaseModel):
 class ResearchStatusResponse(BaseModel):
     thread_id: str
     goal: str
-    status: Literal["awaiting_plan_approval", "in_progress", "completed"]
-    pending_plan: dict | None = None
+    status: Literal[
+        "awaiting_plan_approval", "awaiting_draft_approval", "in_progress", "completed"
+    ]
+    pending_plan: list[dict] | None = None
+    pending_draft: str | None = None
     findings: list[Finding] = []
     critic_verdict: str | None = None
     revision_count: int = 0

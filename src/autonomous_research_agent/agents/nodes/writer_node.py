@@ -16,6 +16,16 @@ def make_writer_node():
             f"Research goal: {state['goal']}\n\nApproved findings:\n{findings_text}"
         )
 
+        feedback = state.get("draft_feedback")
+        if feedback:
+            previous_report = state.get("report", {})
+            prompt += (
+                f"\n\nA previous draft was reviewed and needs revision. "
+                f"Previous draft title: {previous_report.get('title', 'N/A')}\n"
+                f"Revision feedback: {feedback}\n"
+                f"Produce an improved report that addresses this feedback."
+            )
+
         result = await agent.run(prompt)
         report: Report = result.output
         markdown = render_report_markdown(report)
