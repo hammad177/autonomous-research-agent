@@ -21,3 +21,21 @@ def extract_pending_interrupt(result: dict) -> dict | None:
         return None
     first = interrupts[0]
     return getattr(first, "value", first)
+
+
+def process_stream_chunk(chunk: dict) -> list[dict]:
+    """Converts one raw astream(stream_mode='updates') chunk into a list of
+    SSE-ready event dicts. A chunk normally has one key (the node that just
+    finished), but interrupts surface under a special '__interrupt__' key
+    instead of a node name — handled distinctly so the client can tell an
+    interrupt apart from ordinary node progress."""
+    events = []
+    for key, value in chunk.items():
+        if key == "__interrupt__":
+            interrupt_obj = value[0] if isinstance(value, list) else value
+            payload = getattr(interrupt_obj, "value", interrupt_obj)
+            events.append({"type": "interrupt", **payload})
+        else:
+            trace = value.get("trace", []) if isinstance(value, dict) else []
+            events.append({"type": "node_update", "node": key, "trace": trace})
+    return events

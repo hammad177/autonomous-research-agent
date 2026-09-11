@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 
 from autonomous_research_agent.schemas.research import (
     ResearchStartRequest,
@@ -12,7 +12,9 @@ from autonomous_research_agent.common.dependencies import get_research_service
 from autonomous_research_agent.common.utils import (
     new_thread_id,
     extract_pending_interrupt,
+    process_stream_chunk,
 )
+from autonomous_research_agent.common.sse import format_sse
 
 router = APIRouter(prefix="/api/research", tags=["Research"])
 
@@ -53,6 +55,23 @@ async def start_research(
     thread_id = new_thread_id()
     result = await service.start(thread_id, body.goal)
     return _build_status_response(thread_id, result)
+
+
+@router.post("/start/stream")
+async def start_research_stream(
+    body: ResearchStartRequest,
+    service: ResearchService = Depends(get_research_service),
+):
+    thread_id = new_thread_id()
+
+    async def event_generator():
+        yield format_sse("thread", {"thread_id": thread_id})
+        async for chunk in service.stream_start(thread_id, body.goal):
+            for event in process_stream_chunk(chunk):
+                yield format_sse(event["type"], event)
+        yield format_sse("done", {"thread_id": thread_id})
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @router.get("/{thread_id}", response_model=ResearchStatusResponse)
@@ -117,6 +136,23 @@ async def decide_on_plan(
     return _build_status_response(thread_id, result)
 
 
+@router.post("/{thread_id}/plan/stream")
+async def decide_on_plan_stream(
+    thread_id: str,
+    body: PlanDecisionRequest,
+    service: ResearchService = Depends(get_research_service),
+):
+    async def event_generator():
+        async for chunk in service.stream_resume(
+            thread_id, body.model_dump(exclude_none=True)
+        ):
+            for event in process_stream_chunk(chunk):
+                yield format_sse(event["type"], event)
+        yield format_sse("done", {"thread_id": thread_id})
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @router.post("/{thread_id}/draft", response_model=ResearchStatusResponse)
 async def decide_on_draft(
     thread_id: str,
@@ -130,3 +166,20 @@ async def decide_on_draft(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to resume run: {e}")
     return _build_status_response(thread_id, result)
+
+
+@router.post("/{thread_id}/draft/stream")
+async def decide_on_draft_stream(
+    thread_id: str,
+    body: DraftDecisionRequest,
+    service: ResearchService = Depends(get_research_service),
+):
+    async def event_generator():
+        async for chunk in service.stream_resume(
+            thread_id, body.model_dump(exclude_none=True)
+        ):
+            for event in process_stream_chunk(chunk):
+                yield format_sse(event["type"], event)
+        yield format_sse("done", {"thread_id": thread_id})
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

@@ -1,3 +1,4 @@
+from typing import AsyncGenerator
 from langgraph.types import Command
 
 
@@ -12,12 +13,31 @@ class ResearchService:
         return await self.graph.ainvoke({"goal": goal}, config=self._config(thread_id))
 
     async def resume_with_decision(self, thread_id: str, decision: dict) -> dict:
-        """Resumes a paused run with a human decision — works for both the
-        plan-approval and draft-approval interrupts, since both just pass
-        whatever dict the corresponding node's interrupt() call expects."""
         return await self.graph.ainvoke(
             Command(resume=decision), config=self._config(thread_id)
         )
+
+    async def stream_start(
+        self, thread_id: str, goal: str
+    ) -> AsyncGenerator[dict, None]:
+        """Yields one raw update dict per node as it completes, instead of
+        waiting for the whole graph to finish. stream_mode='updates' gives
+        {node_name: partial_state} per event — the same shape each node
+        function already returns, just surfaced incrementally."""
+        async for chunk in self.graph.astream(
+            {"goal": goal}, config=self._config(thread_id), stream_mode="updates"
+        ):
+            yield chunk
+
+    async def stream_resume(
+        self, thread_id: str, decision: dict
+    ) -> AsyncGenerator[dict, None]:
+        async for chunk in self.graph.astream(
+            Command(resume=decision),
+            config=self._config(thread_id),
+            stream_mode="updates",
+        ):
+            yield chunk
 
     async def get_status(self, thread_id: str) -> dict:
         snapshot = await self.graph.aget_state(self._config(thread_id))
