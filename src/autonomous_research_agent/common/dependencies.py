@@ -1,6 +1,5 @@
 from functools import lru_cache
 
-from autonomous_research_agent.agents.graph import build_research_graph
 from autonomous_research_agent.services.research_service import ResearchService
 from autonomous_research_agent.core.extraction import PDFExtractor, URLExtractor
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
