@@ -131,7 +131,7 @@ same `thread_id`.
 4. Run the app:
 
    ```bash
-   uv run uvicorn autonomous_research_agent.main:app --reload
+   uv run autonomous-research-agent
    ```
 
 5. Open `http://localhost:8000/docs` to try the REST API, or connect an
