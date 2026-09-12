@@ -20,10 +20,6 @@ class ResearchService:
     async def stream_start(
         self, thread_id: str, goal: str
     ) -> AsyncGenerator[dict, None]:
-        """Yields one raw update dict per node as it completes, instead of
-        waiting for the whole graph to finish. stream_mode='updates' gives
-        {node_name: partial_state} per event — the same shape each node
-        function already returns, just surfaced incrementally."""
         async for chunk in self.graph.astream(
             {"goal": goal}, config=self._config(thread_id), stream_mode="updates"
         ):
@@ -59,3 +55,17 @@ class ResearchService:
             "trace": values.get("trace", []),
             "is_paused": bool(snapshot.next),
         }
+
+    async def get_history(self, thread_id: str) -> list[dict]:
+        history = []
+        async for snapshot in self.graph.aget_state_history(self._config(thread_id)):
+            history.append(
+                {
+                    "checkpoint_id": snapshot.config["configurable"].get(
+                        "checkpoint_id"
+                    ),
+                    "next": list(snapshot.next),
+                    "trace": snapshot.values.get("trace", []),
+                }
+            )
+        return history

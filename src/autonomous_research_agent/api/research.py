@@ -9,6 +9,10 @@ from autonomous_research_agent.schemas.research import (
 )
 from autonomous_research_agent.services.research_service import ResearchService
 from autonomous_research_agent.common.dependencies import get_research_service
+from autonomous_research_agent.common.dependencies import get_run_registry_repository
+from autonomous_research_agent.repositories.run_registry_repository import (
+    RunRegistryRepository,
+)
 from autonomous_research_agent.common.utils import (
     new_thread_id,
     extract_pending_interrupt,
@@ -51,8 +55,10 @@ def _build_status_response(thread_id: str, result: dict) -> ResearchStatusRespon
 async def start_research(
     body: ResearchStartRequest,
     service: ResearchService = Depends(get_research_service),
+    registry: RunRegistryRepository = Depends(get_run_registry_repository),
 ):
     thread_id = new_thread_id()
+    registry.record(thread_id, body.goal)
     result = await service.start(thread_id, body.goal)
     return _build_status_response(thread_id, result)
 
@@ -61,8 +67,10 @@ async def start_research(
 async def start_research_stream(
     body: ResearchStartRequest,
     service: ResearchService = Depends(get_research_service),
+    registry: RunRegistryRepository = Depends(get_run_registry_repository),
 ):
     thread_id = new_thread_id()
+    registry.record(thread_id, body.goal)
 
     async def event_generator():
         yield format_sse("thread", {"thread_id": thread_id})
@@ -183,3 +191,11 @@ async def decide_on_draft_stream(
         yield format_sse("done", {"thread_id": thread_id})
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/{thread_id}/history")
+async def get_research_history(
+    thread_id: str,
+    service: ResearchService = Depends(get_research_service),
+):
+    return {"history": await service.get_history(thread_id)}

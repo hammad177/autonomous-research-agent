@@ -32,9 +32,21 @@ def process_stream_chunk(chunk: dict) -> list[dict]:
     events = []
     for key, value in chunk.items():
         if key == "__interrupt__":
-            interrupt_obj = value[0] if isinstance(value, list) else value
-            payload = getattr(interrupt_obj, "value", interrupt_obj)
-            events.append({"type": "interrupt", **payload})
+            interrupts = value if isinstance(value, (list, tuple)) else [value]
+
+            for interrupt_obj in interrupts:
+                payload = getattr(interrupt_obj, "value", interrupt_obj)
+
+                if not isinstance(payload, dict):
+                    payload = {"value": payload}
+
+                events.append(
+                    {
+                        "type": "interrupt",
+                        "interrupt_type": payload.pop("type", None),
+                        **payload,
+                    }
+                )
         else:
             trace = value.get("trace", []) if isinstance(value, dict) else []
             events.append({"type": "node_update", "node": key, "trace": trace})

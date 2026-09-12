@@ -13,7 +13,6 @@ from autonomous_research_agent.agents.nodes.draft_approval_node import (
 from autonomous_research_agent.agents.nodes.memory_writer_node import (
     make_memory_writer_node,
 )
-from autonomous_research_agent.agents.checkpointer import get_checkpointer
 from autonomous_research_agent.repositories.vector_repository import VectorRepository
 from autonomous_research_agent.services.graph_service import GraphService
 from autonomous_research_agent.services.memory_service import MemoryService
@@ -69,6 +68,7 @@ def build_research_graph(
     vector_repo: VectorRepository,
     graph_service: GraphService,
     memory_service: MemoryService,
+    checkpointer,
 ):
     graph = StateGraph(AgentState)
 
@@ -93,4 +93,4 @@ def build_research_graph(
     )
     graph.add_edge("memory_writer", END)
 
-    return graph.compile(checkpointer=get_checkpointer())
+    return graph.compile(checkpointer=checkpointer)

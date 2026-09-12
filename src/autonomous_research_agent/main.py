@@ -1,7 +1,32 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from autonomous_research_agent.api import health, research, documents, graph, memory
 
-app = FastAPI(title="Autonomous Research Agent")
+from autonomous_research_agent.api import health, research, documents, graph, memory
+from autonomous_research_agent.agents.checkpointer import sqlite_checkpointer
+from autonomous_research_agent.agents.graph import build_research_graph
+from autonomous_research_agent.common.dependencies import (
+    set_research_graph,
+    get_vector_repository,
+    get_graph_service,
+    get_memory_service,
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with sqlite_checkpointer() as checkpointer:
+        await checkpointer.setup()
+        research_graph = build_research_graph(
+            vector_repo=get_vector_repository(),
+            graph_service=get_graph_service(),
+            memory_service=get_memory_service(),
+            checkpointer=checkpointer,
+        )
+        set_research_graph(research_graph)
+        yield
+
+
+app = FastAPI(title="Autonomous Research Agent", lifespan=lifespan)
 
 app.include_router(health.router)
 app.include_router(research.router)

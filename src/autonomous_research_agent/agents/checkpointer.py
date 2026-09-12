@@ -1,5 +1,12 @@
-from langgraph.checkpoint.memory import MemorySaver
+from contextlib import asynccontextmanager
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+from autonomous_research_agent.config import settings
 
 
-def get_checkpointer() -> MemorySaver:
-    return MemorySaver()
+@asynccontextmanager
+async def sqlite_checkpointer():
+    async with AsyncSqliteSaver.from_conn_string(
+        settings.CHECKPOINT_DB_PATH
+    ) as checkpointer:
+        yield checkpointer

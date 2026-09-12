@@ -26,5 +26,9 @@ class Settings(BaseSettings):
     # --- Memory ---
     MEMORY_NAMESPACE: str = "research_agent"
 
+    # --- Checkpointing ---
+    CHECKPOINT_DB_PATH: str = "data/checkpoints.db"
+    RUN_REGISTRY_PATH: str = "data/runs.json"
+
 
 settings = Settings()
